@@ -2,7 +2,7 @@ use std::convert::{TryFrom, TryInto};
 use std::path::Path;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-enum Language {
+pub enum Language {
     Rust,
     CPlusPlus,
 }
@@ -25,7 +25,6 @@ impl TryFrom<&Path> for Language {
     type Error = ();
 
     fn try_from(value: &Path) -> Result<Self, Self::Error> {
-        use Language::*;
         let extension = value.extension().ok_or(())?;
         let extension = extension.to_str().ok_or(())?;
         extension.try_into()

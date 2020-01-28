@@ -1,8 +1,9 @@
-use std::fs::canonicalize;
 use std::path::PathBuf;
 
 use log::trace;
 use structopt::StructOpt;
+use coding_gym_mate::Language;
+use std::convert::TryInto;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "coding-gym-mate")]
@@ -32,6 +33,14 @@ fn main() {
     env_logger::init();
 
     let opt = Opt::from_args();
+    let path = opt.source.as_path();
+    let lang_str: Option<&str> = opt.language.as_ref().map(|s| &**s);
+    let lang: Option<Language> = (lang_str, path).try_into().ok();
 
-    log::trace!("{:?}", opt);
+    if let Some(lang) = lang {
+        match lang {
+            Language::Rust => println!("Ciao"),
+            _ => todo!(),
+        }
+    }
 }
