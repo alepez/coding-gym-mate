@@ -1,8 +1,7 @@
-use std::path::PathBuf;
+use std::path::{PathBuf};
 
-use log::trace;
 use structopt::StructOpt;
-use coding_gym_mate::Language;
+use coding_gym_mate::*;
 use std::convert::TryInto;
 
 #[derive(StructOpt, Debug)]
@@ -18,11 +17,11 @@ struct Opt {
 
     /// Test input
     #[structopt(long, parse(from_os_str))]
-    test_input: PathBuf,
+    test_input: Option<PathBuf>,
 
     /// Test expected output
     #[structopt(long, parse(from_os_str))]
-    test_output: PathBuf,
+    test_output: Option<PathBuf>,
 
     /// Source code language
     #[structopt(long)]
@@ -38,8 +37,12 @@ fn main() {
     let lang: Option<Language> = (lang_str, path).try_into().ok();
 
     if let Some(lang) = lang {
+        use Language::*;
+
+        let Opt { source, test_input, test_output, .. } = opt;
+
         match lang {
-            Language::Rust => println!("Ciao"),
+            Rust => test_rust(source.as_path(), test_input, test_output),
             _ => todo!(),
         }
     }

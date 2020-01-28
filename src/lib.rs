@@ -1,5 +1,6 @@
 use std::convert::{TryFrom, TryInto};
-use std::path::Path;
+
+mod runner_rust;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Language {
@@ -42,6 +43,9 @@ impl TryFrom<(Option<&str>, &Path)> for Language {
         }
     }
 }
+
+pub use runner_rust::test as test_rust;
+use std::path::Path;
 
 #[cfg(test)]
 mod test {
