@@ -1,4 +1,4 @@
-use std::path::{PathBuf};
+use std::path::{PathBuf, Path};
 
 use structopt::StructOpt;
 use coding_gym_mate::*;
@@ -36,14 +36,13 @@ fn main() {
     let lang_str: Option<&str> = opt.language.as_ref().map(|s| &**s);
     let lang: Option<Language> = (lang_str, path).try_into().ok();
 
-    if let Some(lang) = lang {
-        use Language::*;
+    let Opt { source, test_input, test_output, .. } = opt;
+    let runner = runner::make_runner(lang);
 
-        let Opt { source, test_input, test_output, .. } = opt;
+    let exe = format!("{}.exe", source.to_str().unwrap());
+    let exe = Path::new(&exe);
 
-        match lang {
-            Rust => test_rust(source.as_path(), test_input, test_output),
-            _ => todo!(),
-        }
+    if let Some(runner) = runner {
+        runner.compile(&source, exe);
     }
 }
