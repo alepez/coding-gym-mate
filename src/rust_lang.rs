@@ -1,23 +1,7 @@
-use std::process::{Command, Stdio, Output};
+use std::process::{Command};
 use std::path::{Path, PathBuf};
-use log::{trace, error};
-use crate::runner::{Runner, Error};
+use crate::runner::{Runner, Error, execute_command, run_test};
 use crate::runner::Error as RunnerError;
-
-fn execute(mut command: Command) -> Result<(), Box<dyn std::error::Error>> {
-    trace!("{:?}", command);
-    let status = command
-        .stderr(Stdio::null())
-        .stdout(Stdio::null())
-        .status()?;
-
-    if status.success() {
-        Ok(())
-    } else {
-        Err(format!("Error executing command {:?}", command).into())
-    }
-}
-
 
 fn compile_cmd(source: &Path, output: &Path) -> Command {
     let mut command = Command::new("rustc");
@@ -28,34 +12,6 @@ fn compile_cmd(source: &Path, output: &Path) -> Command {
         .arg(output)
         .arg(source);
     command
-}
-
-fn run_test(exe: &Path, test_input: &Path) -> Option<String> {
-    // TODO Keep information about errors, return Result instead of Option
-    let mut cmd = Command::new(exe.to_str()?);
-
-    let mut child = cmd
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn().ok()?;
-
-    let mut file = std::fs::File::open(test_input).ok()?;
-    let stdin = child.stdin.as_mut()?;
-    std::io::copy(&mut file, stdin).ok()?;
-
-    let Output { stdout, stderr, .. } = child.wait_with_output().ok()?;
-
-    let stdout_str = String::from_utf8(stdout).ok();
-    let stderr_str = String::from_utf8(stderr).ok();
-
-    trace!("Output: {:?}", stdout_str);
-
-    if let Some(stderr_str) = stderr_str {
-        error!("Error: {}", stderr_str);
-    }
-
-    stdout_str
 }
 
 pub struct RustRunner {
@@ -73,7 +29,7 @@ impl RustRunner {
 impl Runner for RustRunner {
     fn compile(&mut self, source: &Path, exe: &Path) -> Result<(), RunnerError> {
         let cmd = compile_cmd(source, exe);
-        let result = execute(cmd);
+        let result = execute_command(cmd);
         if result.is_ok() {
             self.exe = Some(Box::new(exe.into()));
             Ok(())
@@ -83,10 +39,11 @@ impl Runner for RustRunner {
         }
     }
 
-    fn execute(&self, input_file: &Path, _output_file: &Path) -> Result<(), Error> {
+    fn execute(&self, input_file: &Path) -> Result<String, Error> {
         if let Some(exe) = &self.exe {
-            run_test(&exe, input_file);
-            Ok(())
+            let output = run_test(&exe, input_file);
+            // FIXME Add info from stderr
+            output.ok_or(Error::RuntimeError("FIXME".into()))
         } else {
             Err(Error::MissingExecutable())
         }

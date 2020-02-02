@@ -1,4 +1,4 @@
-use std::path::{PathBuf, Path};
+use std::path::PathBuf;
 
 use structopt::StructOpt;
 use coding_gym_mate::*;
@@ -38,17 +38,11 @@ fn main() {
 
     let Opt { source, test_input, test_output, .. } = opt;
     let runner = runner::make_runner(lang);
+    let ok = launch(runner, source, test_input, test_output).unwrap(); // FIXME Handle error
 
-    let exe = format!("{}.exe", source.to_str().unwrap());
-    let exe = Path::new(&exe);
-
-    if let Some(mut runner) = runner {
-        runner.compile(&source, exe).ok().unwrap();
-
-        if let Some(input_file) = test_input {
-            let output_file = Path::new("FIXME");
-            // FIXME handle error
-            runner.execute(&input_file, output_file).ok().unwrap();
-        }
+    if ok {
+        println!("Test PASS");
+    } else {
+        println!("Test FAIL");
     }
 }

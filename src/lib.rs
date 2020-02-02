@@ -1,4 +1,6 @@
 use std::convert::{TryFrom, TryInto};
+use std::path::{Path, PathBuf};
+use crate::runner::Runner;
 
 mod rust_lang;
 pub mod runner;
@@ -45,8 +47,23 @@ impl TryFrom<(Option<&str>, &Path)> for Language {
     }
 }
 
-//pub use rust_lang::test as test_rust;
-use std::path::Path;
+pub fn launch(runner: Option<Box<dyn Runner>>, source: PathBuf, test_input: Option<PathBuf>, test_output: Option<PathBuf>) -> Option<bool> {
+    let mut runner = runner?;
+
+    let exe = format!("{}.exe", source.to_str().unwrap());
+    let exe = Path::new(&exe);
+
+    runner.compile(&source, exe).ok()?;
+
+    // TODO optimization: instead of string, get a stream
+    let test_input = test_input?;
+    let actual_output = runner.execute(&test_input).ok()?;
+
+    let test_output = test_output?;
+    let expected_output = std::fs::read_to_string(test_output).ok()?;
+
+    Some(actual_output == expected_output)
+}
 
 #[cfg(test)]
 mod test {
