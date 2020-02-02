@@ -1,9 +1,8 @@
-use std::process::{Command, Stdio, Child, ChildStdout, ChildStderr, Output};
+use std::process::{Command, Stdio, Output};
 use std::path::{Path, PathBuf};
 use log::{trace, error};
 use crate::runner::{Runner, Error};
 use crate::runner::Error as RunnerError;
-use std::io::{BufReader, Read, Write};
 
 fn execute(mut command: Command) -> Result<(), Box<dyn std::error::Error>> {
     trace!("{:?}", command);
@@ -31,63 +30,33 @@ fn compile_cmd(source: &Path, output: &Path) -> Command {
     command
 }
 
-fn test_cmd(exe: &Path, test_input: &Path) -> Command {
-    Command::new(exe.to_str().unwrap())
-}
-
-fn get_stdout_as_string(r: ChildStdout) -> String {
-    let reader = BufReader::new(r);
-    let mut s = String::new();
-    reader.buffer().read_to_string(&mut s);
-    s
-}
-
-fn get_stderr_as_string(r: ChildStderr) -> String {
-    let reader = BufReader::new(r);
-    let mut s = String::new();
-    reader.buffer().read_to_string(&mut s);
-    s
-}
-
 fn run_test(exe: &Path, test_input: &Path) -> Option<String> {
-    let mut cmd = test_cmd(exe, test_input);
-    let mut child = match cmd
+    // TODO Keep information about errors, return Result instead of Option
+    let mut cmd = Command::new(exe.to_str()?);
+
+    let mut child = cmd
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .spawn() {
-        Err(why) => panic!("couldn't spawn {:?}: {:?}", exe, why),
-        Ok(process) => process,
-    };
+        .spawn().ok()?;
 
-    {
-        let child_stdin = child.stdin.as_mut().unwrap();
-        child_stdin.write_all(b"Hello, world!\n").ok().unwrap();
-    }
+    let mut file = std::fs::File::open(test_input).ok()?;
+    let stdin = child.stdin.as_mut()?;
+    std::io::copy(&mut file, stdin).ok()?;
 
-    let output = child.wait_with_output().ok()?;
+    let Output { stdout, stderr, .. } = child.wait_with_output().ok()?;
 
-    let Output { stdout, stderr, .. } = output;
     let stdout_str = String::from_utf8(stdout).ok();
     let stderr_str = String::from_utf8(stderr).ok();
 
     trace!("Output: {:?}", stdout_str);
-    error!("Error: {:?}", stderr_str);
+
+    if let Some(stderr_str) = stderr_str {
+        error!("Error: {}", stderr_str);
+    }
 
     stdout_str
 }
-
-//pub fn test(source: &Path, test_input: Option<PathBuf>, test_output: Option<PathBuf>) {
-//    let output = format!("{}.exe", source.to_str().unwrap());
-//    let output = Path::new(&output);
-//    let output = execute(compile_cmd(source, output)).ok().map(|_| output);
-//
-//    if let Some(output) = output {
-//        if let Some(test_input) = &test_input {
-//            let t = run_test(output, test_input);
-//        }
-//    }
-//}
 
 pub struct RustRunner {
     exe: Option<Box<PathBuf>>,

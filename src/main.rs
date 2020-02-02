@@ -37,7 +37,7 @@ fn main() {
     let lang: Option<Language> = (lang_str, path).try_into().ok();
 
     let Opt { source, test_input, test_output, .. } = opt;
-    let mut runner = runner::make_runner(lang);
+    let runner = runner::make_runner(lang);
 
     let exe = format!("{}.exe", source.to_str().unwrap());
     let exe = Path::new(&exe);
