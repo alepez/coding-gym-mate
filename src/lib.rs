@@ -45,7 +45,7 @@ impl TryFrom<(Option<&str>, &Path)> for Language {
     }
 }
 
-pub use rust_lang::test as test_rust;
+//pub use rust_lang::test as test_rust;
 use std::path::Path;
 
 #[cfg(test)]

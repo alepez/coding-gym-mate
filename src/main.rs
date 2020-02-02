@@ -37,12 +37,18 @@ fn main() {
     let lang: Option<Language> = (lang_str, path).try_into().ok();
 
     let Opt { source, test_input, test_output, .. } = opt;
-    let runner = runner::make_runner(lang);
+    let mut runner = runner::make_runner(lang);
 
     let exe = format!("{}.exe", source.to_str().unwrap());
     let exe = Path::new(&exe);
 
-    if let Some(runner) = runner {
-        runner.compile(&source, exe);
+    if let Some(mut runner) = runner {
+        runner.compile(&source, exe).ok().unwrap();
+
+        if let Some(input_file) = test_input {
+            let output_file = Path::new("FIXME");
+            // FIXME handle error
+            runner.execute(&input_file, output_file).ok().unwrap();
+        }
     }
 }
