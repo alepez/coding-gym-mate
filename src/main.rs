@@ -37,8 +37,7 @@ fn main() {
     let lang: Option<Language> = (lang_str, path).try_into().ok();
 
     let Opt { source, test_input, test_output, .. } = opt;
-    let runner = runner::make_runner(lang);
-    let ok = launch(runner, source, test_input, test_output).unwrap(); // FIXME Handle error
+    let ok = launch(lang, source, test_input, test_output).unwrap(); // FIXME Handle error
 
     if ok {
         println!("Test PASS");

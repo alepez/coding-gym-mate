@@ -1,9 +1,8 @@
 use std::convert::{TryFrom, TryInto};
 use std::path::{Path, PathBuf};
-use crate::runner::Runner;
 
 mod rust_lang;
-pub mod runner;
+mod runner;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Language {
@@ -47,7 +46,8 @@ impl TryFrom<(Option<&str>, &Path)> for Language {
     }
 }
 
-pub fn launch(runner: Option<Box<dyn Runner>>, source: PathBuf, test_input: Option<PathBuf>, test_output: Option<PathBuf>) -> Option<bool> {
+pub fn launch(lang: Option<Language>, source: PathBuf, test_input: Option<PathBuf>, test_output: Option<PathBuf>) -> Option<bool> {
+    let runner = runner::make_runner(lang);
     let mut runner = runner?;
 
     let exe = format!("{}.exe", source.to_str().unwrap());

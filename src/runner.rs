@@ -8,7 +8,6 @@ pub enum Error {
     CompileError(String),
     RuntimeError(String),
     MissingExecutable(),
-    TestError(String),
 }
 
 pub trait Runner {
