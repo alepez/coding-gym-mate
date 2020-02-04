@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use crate::Language;
 use crate::rust_lang;
 use std::process::{Command, Stdio, Output};
@@ -7,20 +7,49 @@ use log::{trace, error};
 pub enum Error {
     CompileError(String),
     RuntimeError(String),
-    MissingExecutable(),
 }
 
-pub trait Runner {
-    fn compile(&mut self, source: &Path, exe: &Path) -> Result<(), Error>;
-    fn execute(&self, input_file: &Path) -> Result<String, Error>;
+pub trait Compiler {
+    fn compile(&self, source: &Path) -> Result<Executable, Error>;
 }
 
-pub fn make_runner(lang: Option<Language>) -> Option<Box<dyn Runner>> {
+pub struct Executable(PathBuf);
+
+impl Executable {
+    pub fn execute(&self, input_file: &Path) -> Result<TestOutput, Error> {
+        let output = run_test(&self.0, input_file);
+        // FIXME Add info from stderr
+        output.ok_or(Error::RuntimeError("FIXME".into())).map(|output| TestOutput(output))
+    }
+
+    pub fn new(path: PathBuf) -> Self {
+        Executable(path)
+    }
+}
+
+pub struct TestOutput(String);
+
+pub struct ExpectedOutput(String);
+
+#[derive(Debug)]
+pub enum TestResult { Pass, Fail }
+
+impl ExpectedOutput {
+    pub fn check(&self, test_output: TestOutput) -> TestResult {
+        if self.0 == test_output.0 { TestResult::Pass } else { TestResult::Fail }
+    }
+
+    pub fn new(s: String) -> ExpectedOutput {
+        ExpectedOutput(s)
+    }
+}
+
+pub fn make_compiler(lang: Option<Language>) -> Option<Box<dyn Compiler>> {
     if let Some(lang) = lang {
         use Language::*;
 
         let runner = match lang {
-            Rust => Box::new(rust_lang::RustRunner::new()),
+            Rust => Box::new(rust_lang::RustCompiler::new()),
             _ => todo!(),
         };
 

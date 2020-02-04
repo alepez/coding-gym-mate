@@ -1,7 +1,7 @@
-use std::process::{Command};
-use std::path::{Path, PathBuf};
-use crate::runner::{Runner, Error, execute_command, run_test};
+use std::process::Command;
+use crate::runner::{Compiler, Executable, execute_command};
 use crate::runner::Error as RunnerError;
+use std::path::Path;
 
 fn compile_cmd(source: &Path, output: &Path) -> Command {
     let mut command = Command::new("rustc");
@@ -14,38 +14,27 @@ fn compile_cmd(source: &Path, output: &Path) -> Command {
     command
 }
 
-pub struct RustRunner {
-    exe: Option<Box<PathBuf>>,
-}
+pub struct RustCompiler;
 
-impl RustRunner {
+impl RustCompiler {
     pub fn new() -> Self {
-        RustRunner {
-            exe: None,
-        }
+        RustCompiler {}
     }
 }
 
-impl Runner for RustRunner {
-    fn compile(&mut self, source: &Path, exe: &Path) -> Result<(), RunnerError> {
+impl Compiler for RustCompiler {
+    fn compile(&self, source: &Path) -> Result<Executable, RunnerError> {
+        let exe = format!("{}.exe", source.to_str().unwrap());
+        let exe = Path::new(&exe);
+
         let cmd = compile_cmd(source, exe);
+
         let result = execute_command(cmd);
         if result.is_ok() {
-            self.exe = Some(Box::new(exe.into()));
-            Ok(())
+            Ok(Executable::new(exe.to_path_buf()))
         } else {
             log::error!("Compiler error: {:?}", result.unwrap_err());
             Err(RunnerError::CompileError("Unknown compiler error".into()))
-        }
-    }
-
-    fn execute(&self, input_file: &Path) -> Result<String, Error> {
-        if let Some(exe) = &self.exe {
-            let output = run_test(&exe, input_file);
-            // FIXME Add info from stderr
-            output.ok_or(Error::RuntimeError("FIXME".into()))
-        } else {
-            Err(Error::MissingExecutable())
         }
     }
 }

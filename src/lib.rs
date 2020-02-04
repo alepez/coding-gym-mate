@@ -1,5 +1,6 @@
 use std::convert::{TryFrom, TryInto};
 use std::path::{Path, PathBuf};
+use runner::{TestResult, ExpectedOutput};
 
 mod rust_lang;
 mod runner;
@@ -46,27 +47,23 @@ impl TryFrom<(Option<&str>, &Path)> for Language {
     }
 }
 
-pub fn launch(lang: Option<Language>, source: PathBuf, test_input: Option<PathBuf>, test_output: Option<PathBuf>) -> Option<bool> {
+pub fn launch(lang: Option<Language>, source: PathBuf, test_input: Option<PathBuf>, test_output: Option<PathBuf>) -> Option<TestResult> {
     let source = std::fs::canonicalize(source).expect("Invalid source file");
     let test_input = test_input.and_then(|x| std::fs::canonicalize(x).ok());
     let test_output = test_output.and_then(|x| std::fs::canonicalize(x).ok());
 
-    let runner = runner::make_runner(lang);
-    let mut runner = runner?;
+    let compiler = runner::make_compiler(lang)?;
 
-    let exe = format!("{}.exe", source.to_str().unwrap());
-    let exe = Path::new(&exe);
-
-    runner.compile(&source, exe).ok()?;
+    let exe = compiler.compile(&source).ok()?;
 
     // TODO optimization: instead of string, get a stream
     let test_input = test_input?;
-    let actual_output = runner.execute(&test_input).ok()?;
+    let actual_output = exe.execute(&test_input).ok()?;
 
     let test_output = test_output?;
-    let expected_output = std::fs::read_to_string(test_output).ok()?;
+    let expected_output = ExpectedOutput::new(std::fs::read_to_string(test_output).ok()?);
 
-    Some(actual_output == expected_output)
+    Some(expected_output.check(actual_output))
 }
 
 #[cfg(test)]

@@ -38,11 +38,6 @@ fn main() {
     let lang: Option<Language> = (lang_str, path).try_into().ok();
 
     let Opt { source, test_input, test_output, .. } = opt;
-    let ok = launch(lang, source, test_input, test_output).unwrap(); // FIXME Handle error
-
-    if ok {
-        println!("Test PASS");
-    } else {
-        println!("Test FAIL");
-    }
+    let result = launch(lang, source, test_input, test_output);
+    dbg!(result);
 }
