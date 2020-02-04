@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use runner::{TestResult, ExpectedOutput};
 
 mod rust_lang;
+mod cpp_lang;
 mod runner;
 
 #[derive(Debug, Copy, Clone, PartialEq)]

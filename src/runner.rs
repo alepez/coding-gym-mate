@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 use crate::Language;
 use crate::rust_lang;
+use crate::cpp_lang;
 use std::process::{Command, Stdio, Output};
 use log::{trace, error};
 
@@ -48,12 +49,13 @@ pub fn make_compiler(lang: Option<Language>) -> Option<Box<dyn Compiler>> {
     if let Some(lang) = lang {
         use Language::*;
 
-        let runner = match lang {
-            Rust => Box::new(rust_lang::RustCompiler::new()),
+        let compiler : Box<dyn Compiler> = match lang {
+            Rust => Box::new(rust_lang::RustCompiler::default()),
+            CPlusPlus => Box::new(cpp_lang::CppCompiler::default()),
             _ => todo!(),
         };
 
-        Some(runner)
+        Some(compiler)
     } else {
         None
     }

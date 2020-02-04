@@ -4,7 +4,7 @@ use crate::runner::Error as RunnerError;
 use std::path::Path;
 
 fn compile_cmd(source: &Path, output: &Path) -> Command {
-    let mut command = Command::new("rustc");
+    let mut command = Command::new("g++");
     let source = source.to_str().unwrap();
     let output = output.to_str().unwrap();
     command
@@ -14,15 +14,15 @@ fn compile_cmd(source: &Path, output: &Path) -> Command {
     command
 }
 
-pub struct RustCompiler;
+pub struct CppCompiler;
 
-impl Default for RustCompiler {
+impl Default for CppCompiler {
     fn default() -> Self {
-        RustCompiler{}
+        CppCompiler{}
     }
 }
 
-impl Compiler for RustCompiler {
+impl Compiler for CppCompiler {
     fn compile(&self, source: &Path) -> Result<Executable, RunnerError> {
         let exe = format!("{}.exe", source.to_str().unwrap());
         let exe = Path::new(&exe);
