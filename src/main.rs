@@ -28,6 +28,7 @@ struct Opt {
     language: Option<String>,
 }
 
+// TODO Make paths absolute
 fn main() {
     env_logger::init();
 
