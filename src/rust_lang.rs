@@ -1,6 +1,5 @@
 use std::process::Command;
-use crate::runner::{Compiler, Executable, execute_command};
-use crate::runner::Error as RunnerError;
+use crate::runner::{Compiler, Executable, execute_command, TestError};
 use std::path::Path;
 
 fn compile_cmd(source: &Path, output: &Path) -> Command {
@@ -23,7 +22,7 @@ impl Default for RustCompiler {
 }
 
 impl Compiler for RustCompiler {
-    fn compile(&self, source: &Path) -> Result<Executable, RunnerError> {
+    fn compile(&self, source: &Path) -> Result<Executable, TestError> {
         let exe = format!("{}.exe", source.to_str().unwrap());
         let exe = Path::new(&exe);
 
@@ -33,8 +32,7 @@ impl Compiler for RustCompiler {
         if result.is_ok() {
             Ok(Executable::new(exe.to_path_buf()))
         } else {
-            log::error!("Compiler error: {:?}", result.unwrap_err());
-            Err(RunnerError::CompileError("Unknown compiler error".into()))
+            Err(TestError::CompilerError(result.unwrap_err().to_string()))
         }
     }
 }

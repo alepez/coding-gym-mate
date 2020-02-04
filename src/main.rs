@@ -1,8 +1,7 @@
-use std::path::PathBuf;
-
-use structopt::StructOpt;
-use coding_gym_mate::*;
+use coding_gym_mate::{launch, Language};
 use std::convert::TryInto;
+use std::path::PathBuf;
+use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "coding-gym-mate")]
@@ -37,7 +36,18 @@ fn main() {
     let lang_str: Option<&str> = opt.language.as_ref().map(|s| &**s);
     let lang: Option<Language> = (lang_str, path).try_into().ok();
 
-    let Opt { source, test_input, test_output, .. } = opt;
+    let Opt {
+        source,
+        test_input,
+        test_output,
+        ..
+    } = opt;
+
     let result = launch(lang, source, test_input, test_output);
-    dbg!(result);
+
+    if result.is_ok() {
+        println!("Test Passed");
+    } else {
+        println!("{:?}", result);
+    }
 }

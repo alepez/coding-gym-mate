@@ -1,6 +1,7 @@
 use std::convert::{TryFrom, TryInto};
 use std::path::{Path, PathBuf};
-use runner::{TestResult, ExpectedOutput};
+use runner::ExpectedOutput;
+use crate::runner::TestError;
 
 mod rust_lang;
 mod cpp_lang;
@@ -48,23 +49,35 @@ impl TryFrom<(Option<&str>, &Path)> for Language {
     }
 }
 
-pub fn launch(lang: Option<Language>, source: PathBuf, test_input: Option<PathBuf>, test_output: Option<PathBuf>) -> Option<TestResult> {
+pub fn launch(lang: Option<Language>, source: PathBuf, test_input: Option<PathBuf>, test_output: Option<PathBuf>) -> Result<(), TestError> {
     let source = std::fs::canonicalize(source).expect("Invalid source file");
     let test_input = test_input.and_then(|x| std::fs::canonicalize(x).ok());
     let test_output = test_output.and_then(|x| std::fs::canonicalize(x).ok());
 
-    let compiler = runner::make_compiler(lang)?;
-
-    let exe = compiler.compile(&source).ok()?;
-
-    // TODO optimization: instead of string, get a stream
-    let test_input = test_input?;
-    let actual_output = exe.execute(&test_input).ok()?;
-
-    let test_output = test_output?;
-    let expected_output = ExpectedOutput::new(std::fs::read_to_string(test_output).ok()?);
-
-    Some(expected_output.check(actual_output))
+    runner::make_compiler(lang).ok_or(TestError::InvalidLanguage)
+        .and_then(|compiler| {
+            compiler.compile(&source)
+        })
+        .and_then(|exe| {
+            let test_input = test_input.ok_or(TestError::MissingInput)?;
+            exe.execute(&test_input)
+        })
+        .and_then(|actual_output| {
+            if let Some(test_output) = test_output {
+                let expected_output = std::fs::read_to_string(test_output).unwrap();
+                let expected_output = ExpectedOutput::new(expected_output);
+                Ok((expected_output, actual_output))
+            } else {
+                Err(TestError::ManualCheck(actual_output))
+            }
+        })
+        .and_then(|(expected_output, actual_output)| {
+            if expected_output.check(&actual_output) {
+                Ok(())
+            } else {
+                Err(TestError::OutputMismatch(expected_output, actual_output))
+            }
+        })
 }
 
 #[cfg(test)]

@@ -5,22 +5,17 @@ use crate::cpp_lang;
 use std::process::{Command, Stdio, Output};
 use log::{trace, error};
 
-pub enum Error {
-    CompileError(String),
-    RuntimeError(String),
-}
-
 pub trait Compiler {
-    fn compile(&self, source: &Path) -> Result<Executable, Error>;
+    fn compile(&self, source: &Path) -> Result<Executable, TestError>;
 }
 
 pub struct Executable(PathBuf);
 
 impl Executable {
-    pub fn execute(&self, input_file: &Path) -> Result<TestOutput, Error> {
+    pub fn execute(&self, input_file: &Path) -> Result<ActualOutput, TestError> {
         let output = run_test(&self.0, input_file);
         // FIXME Add info from stderr
-        output.ok_or(Error::RuntimeError("FIXME".into())).map(|output| TestOutput(output))
+        output.ok_or(TestError::RuntimeError("FIXME".into())).map(|output| ActualOutput(output))
     }
 
     pub fn new(path: PathBuf) -> Self {
@@ -28,16 +23,25 @@ impl Executable {
     }
 }
 
-pub struct TestOutput(String);
+#[derive(Debug)]
+pub struct ActualOutput(String);
 
+#[derive(Debug)]
 pub struct ExpectedOutput(String);
 
 #[derive(Debug)]
-pub enum TestResult { Pass, Fail }
+pub enum TestError {
+    InvalidLanguage,
+    MissingInput,
+    CompilerError(String),
+    RuntimeError(String),
+    OutputMismatch(ExpectedOutput, ActualOutput),
+    ManualCheck(ActualOutput),
+}
 
 impl ExpectedOutput {
-    pub fn check(&self, test_output: TestOutput) -> TestResult {
-        if self.0 == test_output.0 { TestResult::Pass } else { TestResult::Fail }
+    pub fn check(&self, test_output: &ActualOutput) -> bool {
+        self.0 == test_output.0
     }
 
     pub fn new(s: String) -> ExpectedOutput {
@@ -49,7 +53,7 @@ pub fn make_compiler(lang: Option<Language>) -> Option<Box<dyn Compiler>> {
     if let Some(lang) = lang {
         use Language::*;
 
-        let compiler : Box<dyn Compiler> = match lang {
+        let compiler: Box<dyn Compiler> = match lang {
             Rust => Box::new(rust_lang::RustCompiler::default()),
             CPlusPlus => Box::new(cpp_lang::CppCompiler::default()),
             _ => todo!(),
@@ -68,7 +72,7 @@ pub fn execute_command(mut command: Command) -> Result<(), Box<dyn std::error::E
         .stdout(Stdio::null())
         .status()?;
 
-    // TODO Get stdout and stderr, add output to Result in case of error
+// TODO Get stdout and stderr, add output to Result in case of error
 
     if status.success() {
         Ok(())
@@ -78,7 +82,7 @@ pub fn execute_command(mut command: Command) -> Result<(), Box<dyn std::error::E
 }
 
 pub fn run_test(exe: &Path, test_input: &Path) -> Option<String> {
-    // TODO Keep information about errors, return Result instead of Option
+// TODO Keep information about errors, return Result instead of Option
     let mut cmd = Command::new(exe.to_str()?);
 
     let mut child = cmd
