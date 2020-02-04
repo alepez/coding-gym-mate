@@ -1,7 +1,9 @@
-use coding_gym_mate::{launch, Language};
 use std::convert::TryInto;
 use std::path::PathBuf;
+
 use structopt::StructOpt;
+
+use coding_gym_mate::{launch, Language};
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "coding-gym-mate")]

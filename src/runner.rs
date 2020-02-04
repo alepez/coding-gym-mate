@@ -1,9 +1,11 @@
 use std::path::{Path, PathBuf};
-use crate::Language;
-use crate::rust_lang;
+use std::process::{Command, Output, Stdio};
+
+use log::{error, trace};
+
 use crate::cpp_lang;
-use std::process::{Command, Stdio, Output};
-use log::{trace, error};
+use crate::rust_lang;
+use crate::Language;
 
 pub trait Compiler {
     fn compile(&self, source: &Path) -> Result<Executable, TestError>;
@@ -15,7 +17,9 @@ impl Executable {
     pub fn execute(&self, input_file: &Path) -> Result<ActualOutput, TestError> {
         let output = run_test(&self.0, input_file);
         // FIXME Add info from stderr
-        output.ok_or(TestError::RuntimeError("FIXME".into())).map(|output| ActualOutput(output))
+        output
+            .ok_or(TestError::RuntimeError("FIXME".into()))
+            .map(|output| ActualOutput(output))
     }
 
     pub fn new(path: PathBuf) -> Self {
@@ -56,7 +60,6 @@ pub fn make_compiler(lang: Option<Language>) -> Option<Box<dyn Compiler>> {
         let compiler: Box<dyn Compiler> = match lang {
             Rust => Box::new(rust_lang::RustCompiler::default()),
             CPlusPlus => Box::new(cpp_lang::CppCompiler::default()),
-            _ => todo!(),
         };
 
         Some(compiler)
@@ -72,7 +75,7 @@ pub fn execute_command(mut command: Command) -> Result<(), Box<dyn std::error::E
         .stdout(Stdio::null())
         .status()?;
 
-// TODO Get stdout and stderr, add output to Result in case of error
+    // TODO Get stdout and stderr, add output to Result in case of error
 
     if status.success() {
         Ok(())
@@ -82,14 +85,15 @@ pub fn execute_command(mut command: Command) -> Result<(), Box<dyn std::error::E
 }
 
 pub fn run_test(exe: &Path, test_input: &Path) -> Option<String> {
-// TODO Keep information about errors, return Result instead of Option
+    // TODO Keep information about errors, return Result instead of Option
     let mut cmd = Command::new(exe.to_str()?);
 
     let mut child = cmd
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .spawn().ok()?;
+        .spawn()
+        .ok()?;
 
     let mut file = std::fs::File::open(test_input).ok()?;
     let stdin = child.stdin.as_mut()?;

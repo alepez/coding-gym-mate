@@ -1,11 +1,14 @@
 use std::convert::{TryFrom, TryInto};
 use std::path::{Path, PathBuf};
+
 use runner::ExpectedOutput;
+
 use crate::runner::TestError;
 
-mod rust_lang;
 mod cpp_lang;
+mod lang;
 mod runner;
+mod rust_lang;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Language {
@@ -22,7 +25,7 @@ impl TryFrom<&str> for Language {
         match value {
             "rust" | "rs" => Ok(Rust),
             "cplusplus" | "cpp" | "cxx" => Ok(CPlusPlus),
-            _ => Err(())
+            _ => Err(()),
         }
     }
 }
@@ -49,15 +52,19 @@ impl TryFrom<(Option<&str>, &Path)> for Language {
     }
 }
 
-pub fn launch(lang: Option<Language>, source: PathBuf, test_input: Option<PathBuf>, test_output: Option<PathBuf>) -> Result<(), TestError> {
+pub fn launch(
+    lang: Option<Language>,
+    source: PathBuf,
+    test_input: Option<PathBuf>,
+    test_output: Option<PathBuf>,
+) -> Result<(), TestError> {
     let source = std::fs::canonicalize(source).expect("Invalid source file");
     let test_input = test_input.and_then(|x| std::fs::canonicalize(x).ok());
     let test_output = test_output.and_then(|x| std::fs::canonicalize(x).ok());
 
-    runner::make_compiler(lang).ok_or(TestError::InvalidLanguage)
-        .and_then(|compiler| {
-            compiler.compile(&source)
-        })
+    runner::make_compiler(lang)
+        .ok_or(TestError::InvalidLanguage)
+        .and_then(|compiler| compiler.compile(&source))
         .and_then(|exe| {
             let test_input = test_input.ok_or(TestError::MissingInput)?;
             exe.execute(&test_input)
@@ -82,9 +89,10 @@ pub fn launch(lang: Option<Language>, source: PathBuf, test_input: Option<PathBu
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use std::convert::TryInto;
     use std::path::PathBuf;
+
+    use super::*;
 
     #[test]
     fn test_language_from_str() {
