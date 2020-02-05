@@ -1,5 +1,5 @@
 use std::convert::{TryFrom, TryInto};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use runner::ExpectedOutput;
 

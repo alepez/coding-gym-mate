@@ -1,12 +1,7 @@
 use std::convert::TryInto;
-use std::env;
 use std::path::{Path, PathBuf};
 
-use inotify::{
-    EventMask,
-    Inotify,
-    WatchMask,
-};
+use inotify::{EventMask, Inotify, WatchMask};
 use structopt::StructOpt;
 
 use coding_gym_mate::{Language, launch};
@@ -35,21 +30,27 @@ struct Opt {
     language: Option<String>,
 }
 
-fn init_inotify(path: &Path) -> Inotify {
-    let mut inotify = Inotify::init()
-        .expect("Failed to initialize inotify");
+fn watch_file_and_launch(source: &Path, test: &dyn Fn() -> ()) {
+    let mut inotify = Inotify::init().expect("Failed to initialize inotify");
 
     inotify
-        .add_watch(
-            path,
-            WatchMask::MODIFY,
-        )
+        .add_watch(source, WatchMask::MODIFY)
         .expect("Failed to add inotify watch");
 
-    inotify
+    let mut buffer = [0u8; 4096];
+
+    loop {
+        inotify
+            .read_events_blocking(&mut buffer)
+            .expect("Failed to read inotify events")
+            .for_each(|event| {
+                if event.mask.contains(EventMask::MODIFY) {
+                    test();
+                }
+            });
+    }
 }
 
-// TODO Make paths absolute
 fn main() {
     env_logger::init();
 
@@ -57,7 +58,6 @@ fn main() {
     let path = opt.source.as_path();
     let lang_str: Option<&str> = opt.language.as_ref().map(|s| &**s);
     let lang: Option<Language> = (lang_str, path).try_into().ok();
-
 
     let Opt {
         source,
@@ -70,54 +70,19 @@ fn main() {
     let test_input = test_input.as_ref().map(|x| x.as_path());
     let test_output = test_output.as_ref().map(|x| x.as_path());
 
-    let mut inotify = init_inotify(&source);
-
-    let once = || { launch(lang, &source, test_input, test_output) };
-
-    loop {
-        let result = once();
+    let test = || {
+        let result = launch(lang, &source, test_input, test_output);
 
         if result.is_ok() {
             println!("Test Passed");
         } else {
             println!("{:?}", result);
         }
+    };
 
-        if !watch {
-            println!("Finished");
-            break;
-        }
+    test();
 
-        println!("Watch for changes {:?}", &source);
-
-        let mut buffer = [0u8; 4096];
-
-        let events = inotify
-            .read_events_blocking(&mut buffer)
-            .expect("Failed to read inotify events");
-
-        println!("1");
-        for event in events {
-            println!("2");
-            if event.mask.contains(EventMask::CREATE) {
-                if event.mask.contains(EventMask::ISDIR) {
-                    println!("Directory created: {:?}", event.name);
-                } else {
-                    println!("File created: {:?}", event.name);
-                }
-            } else if event.mask.contains(EventMask::DELETE) {
-                if event.mask.contains(EventMask::ISDIR) {
-                    println!("Directory deleted: {:?}", event.name);
-                } else {
-                    println!("File deleted: {:?}", event.name);
-                }
-            } else if event.mask.contains(EventMask::MODIFY) {
-                if event.mask.contains(EventMask::ISDIR) {
-                    println!("Directory modified: {:?}", event.name);
-                } else {
-                    println!("File modified: {:?}", event.name);
-                }
-            }
-        }
+    if watch {
+        watch_file_and_launch(&source, &test);
     }
 }
