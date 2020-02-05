@@ -43,6 +43,19 @@ pub enum TestError {
     ManualCheck(ActualOutput),
 }
 
+impl std::fmt::Display for TestError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            TestError::InvalidLanguage => write!(f, "Invalid language"),
+            TestError::MissingInput => write!(f, "Missing input"),
+            TestError::CompilerError(e) => write!(f, "Compiler error: {:?}", e),
+            TestError::RuntimeError(e) => write!(f, "Runtime error: {:?}", e),
+            TestError::OutputMismatch(expected, actual) => write!(f, "Expected:\n{}\nActual:\n{}", expected.0, actual.0),
+            TestError::ManualCheck(actual) => write!(f, "Actual:\n{}", actual.0),
+        }
+    }
+}
+
 impl ExpectedOutput {
     pub fn check(&self, test_output: &ActualOutput) -> bool {
         self.0 == test_output.0

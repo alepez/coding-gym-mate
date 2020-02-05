@@ -69,20 +69,21 @@ fn main() {
 
     let test_input = test_input.as_ref().map(|x| x.as_path());
     let test_output = test_output.as_ref().map(|x| x.as_path());
+    let source = source.as_path();
 
     let test = || {
-        let result = launch(lang, &source, test_input, test_output);
+        let result = launch(lang, source, test_input, test_output);
 
         if result.is_ok() {
             println!("Test Passed");
-        } else {
-            println!("{:?}", result);
+        } else if let Err(err) = result {
+            println!("{}", err);
         }
     };
 
     test();
 
     if watch {
-        watch_file_and_launch(&source, &test);
+        watch_file_and_launch(source, &test);
     }
 }
