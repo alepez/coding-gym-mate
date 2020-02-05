@@ -54,9 +54,9 @@ impl TryFrom<(Option<&str>, &Path)> for Language {
 
 pub fn launch(
     lang: Option<Language>,
-    source: PathBuf,
-    test_input: Option<PathBuf>,
-    test_output: Option<PathBuf>,
+    source: &Path,
+    test_input: Option<&Path>,
+    test_output: Option<&Path>,
 ) -> Result<(), TestError> {
     let source = std::fs::canonicalize(source).expect("Invalid source file");
     let test_input = test_input.and_then(|x| std::fs::canonicalize(x).ok());
