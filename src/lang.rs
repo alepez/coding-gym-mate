@@ -8,6 +8,7 @@ pub fn executable_path(source_path: &Path) -> PathBuf {
     PathBuf::from(&exe)
 }
 
+// C-like compilers (C, C++, Rust)
 pub fn cc_compile_cmd(program: &str, source: &Path, output: &Path) -> Command {
     let mut command = Command::new(program);
     let source = source.to_str().unwrap();

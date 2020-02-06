@@ -4,8 +4,8 @@ use std::process::{Command, Output, Stdio};
 use log::{error, trace};
 
 use crate::cpp_lang;
-use crate::rust_lang;
 use crate::Language;
+use crate::rust_lang;
 
 pub trait Compiler {
     fn compile(&self, source: &Path) -> Result<Executable, TestError>;
@@ -48,8 +48,8 @@ impl std::fmt::Display for TestError {
         match self {
             TestError::InvalidLanguage => write!(f, "Invalid language"),
             TestError::MissingInput => write!(f, "Missing input"),
-            TestError::CompilerError(e) => write!(f, "Compiler error: {:?}", e),
-            TestError::RuntimeError(e) => write!(f, "Runtime error: {:?}", e),
+            TestError::CompilerError(e) => write!(f, "Compiler error:\n{}", e),
+            TestError::RuntimeError(e) => write!(f, "Runtime error:\n{}", e),
             TestError::OutputMismatch(expected, actual) => write!(f, "Expected:\n{}\nActual:\n{}", expected.0, actual.0),
             TestError::ManualCheck(actual) => write!(f, "Actual:\n{}", actual.0),
         }
@@ -81,19 +81,22 @@ pub fn make_compiler(lang: Option<Language>) -> Option<Box<dyn Compiler>> {
     }
 }
 
-pub fn execute_command(mut command: Command) -> Result<(), Box<dyn std::error::Error>> {
-    trace!("{:?}", command);
-    let status = command
-        .stderr(Stdio::null())
-        .stdout(Stdio::null())
-        .status()?;
+pub fn execute_command(mut cmd: Command) -> Result<(), Box<dyn std::error::Error>> {
+    let child = cmd
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn().expect("Cannot spawn process");
 
-    // TODO Get stdout and stderr, add output to Result in case of error
+    let Output { stdout, stderr, status, .. } = child.wait_with_output().unwrap();
+
+    let stdout_str = String::from_utf8(stdout).unwrap_or(String::new());
+    let stderr_str = String::from_utf8(stderr).unwrap_or(String::new());
 
     if status.success() {
         Ok(())
     } else {
-        Err(format!("Error executing command {:?}", command).into())
+        Err(format!("Error executing command \n{}\n{}", stderr_str, stdout_str).into())
     }
 }
 
