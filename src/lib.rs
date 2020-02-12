@@ -177,4 +177,15 @@ mod test {
         let err = launch(lan, &source, Some(&test_input), None);
         assert!(matches!(err, Err(TestError::ManualCheck(_))));
     }
+
+    #[test]
+    fn test_launch_mismatch() {
+        let lan = Some(Language::Rust);
+        let source = PathBuf::from("test_samples/reverse_wrong.rs");
+        let test_input = PathBuf::from("test_samples/input.txt");
+        let test_output = PathBuf::from("test_samples/output.txt");
+
+        let err = launch(lan, &source, Some(&test_input), Some(&test_output));
+        assert!(matches!(err, Err(TestError::OutputMismatch(_, _))));
+    }
 }
