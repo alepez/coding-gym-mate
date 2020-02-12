@@ -1,3 +1,5 @@
+#![feature(matches_macro)]
+
 use std::convert::{TryFrom, TryInto};
 use std::path::Path;
 
@@ -120,5 +122,49 @@ mod test {
         let pair = (Some("cpp"), path.as_path());
         let lang: Option<Language> = pair.try_into().ok();
         assert_eq!(lang, Some(Language::CPlusPlus));
+    }
+
+    #[test]
+    fn test_launch() {
+        let lan = Some(Language::Rust);
+        let source = PathBuf::from("test_samples/reverse.rs");
+        let test_input = PathBuf::from("test_samples/input.txt");
+        let test_output = PathBuf::from("test_samples/output.txt");
+
+        let err = launch(lan, &source, Some(&test_input), Some(&test_output));
+        assert_eq!(err,Ok(()));
+    }
+
+    #[test]
+    fn test_launch_no_input() {
+        let lan = Some(Language::Rust);
+        let source = PathBuf::from("test_samples/nop.rs");
+        let test_input = PathBuf::from("test_samples/wrong_file.txt");
+        let test_output = PathBuf::from("test_samples/output.txt");
+
+        let err = launch(lan, &source, Some(&test_input), Some(&test_output));
+        assert_eq!(err, Err(TestError::MissingInput));
+    }
+
+    #[test]
+    fn test_launch_runtime_error() {
+        let lan = Some(Language::Rust);
+        let source = PathBuf::from("test_samples/runtime_error.rs");
+        let test_input = PathBuf::from("test_samples/input.txt");
+        let test_output = PathBuf::from("test_samples/output.txt");
+
+        let err = launch(lan, &source, Some(&test_input), Some(&test_output));
+        assert!(matches!(err, Err(TestError::RuntimeError(_))));
+    }
+
+    #[test]
+    fn test_launch_compile_error() {
+        let lan = Some(Language::Rust);
+        let source = PathBuf::from("test_samples/compile_error.rs");
+        let test_input = PathBuf::from("test_samples/input.txt");
+        let test_output = PathBuf::from("test_samples/output.txt");
+
+        let err = launch(lan, &source, Some(&test_input), Some(&test_output));
+        assert!(matches!(err, Err(TestError::CompilerError(_))));
     }
 }

@@ -16,9 +16,8 @@ pub struct Executable(PathBuf);
 impl Executable {
     pub fn execute(&self, input_file: &Path) -> Result<ActualOutput, TestError> {
         let output = run_test(&self.0, input_file);
-        // FIXME Add info from stderr
         output
-            .ok_or(TestError::RuntimeError("FIXME".into()))
+            .map_err(|e| TestError::RuntimeError(e))
             .map(|output| ActualOutput(output))
     }
 
@@ -27,13 +26,13 @@ impl Executable {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct ActualOutput(String);
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct ExpectedOutput(String);
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum TestError {
     InvalidLanguage,
     MissingInput,
@@ -100,22 +99,22 @@ pub fn execute_command(mut cmd: Command) -> Result<(), Box<dyn std::error::Error
     }
 }
 
-pub fn run_test(exe: &Path, test_input: &Path) -> Option<String> {
+pub fn run_test(exe: &Path, test_input: &Path) -> Result<String, String> {
     // TODO Keep information about errors, return Result instead of Option
-    let mut cmd = Command::new(exe.to_str()?);
+    let mut cmd = Command::new(exe.to_str().unwrap());
 
     let mut child = cmd
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .ok()?;
+        .ok().unwrap();
 
-    let mut file = std::fs::File::open(test_input).ok()?;
-    let stdin = child.stdin.as_mut()?;
-    std::io::copy(&mut file, stdin).ok()?;
+    let mut file = std::fs::File::open(test_input).ok().unwrap();
+    let stdin = child.stdin.as_mut().unwrap();
+    std::io::copy(&mut file, stdin).ok().unwrap();
 
-    let Output { stdout, stderr, .. } = child.wait_with_output().ok()?;
+    let Output { stdout, stderr, .. } = child.wait_with_output().ok().unwrap();
 
     let stdout_str = String::from_utf8(stdout).ok();
     let stderr_str = String::from_utf8(stderr).ok();
@@ -125,8 +124,9 @@ pub fn run_test(exe: &Path, test_input: &Path) -> Option<String> {
     if let Some(stderr_str) = stderr_str {
         if !stderr_str.is_empty() {
             error!("Error: {}", stderr_str);
+            return Err(stderr_str);
         }
     }
 
-    stdout_str
+    Ok(stdout_str.unwrap())
 }

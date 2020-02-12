@@ -22,3 +22,22 @@ pub fn execute_compiler(cmd: Command, exe: &Path) -> Result<Executable, TestErro
         .and_then(|_| Ok(Executable::new(exe.to_path_buf())))
         .map_err(|err| TestError::CompilerError(err.to_string()))
 }
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_exe_path() {
+        let exe_path = executable_path(&PathBuf::from("/tmp/zzz.cpp"));
+        assert_eq!(PathBuf::from("/tmp/zzz.cpp.exe"), exe_path);
+    }
+
+    #[test]
+    fn test_cc_compile_command() {
+        let src_path = PathBuf::from("/tmp/zzz.cpp");
+        let out_path = PathBuf::from("/tmp/zzz.cpp.exe");
+        let _cmd = cc_compile_cmd("g++", &src_path, &out_path);
+    }
+}
