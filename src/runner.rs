@@ -4,8 +4,8 @@ use std::process::{Command, Output, Stdio};
 use log::{error, trace};
 
 use crate::cpp_lang;
-use crate::Language;
 use crate::rust_lang;
+use crate::Language;
 
 pub trait Compiler {
     fn compile(&self, source: &Path) -> Result<Executable, TestError>;
@@ -49,7 +49,9 @@ impl std::fmt::Display for TestError {
             TestError::MissingInput => write!(f, "Missing input"),
             TestError::CompilerError(e) => write!(f, "Compiler error:\n{}", e),
             TestError::RuntimeError(e) => write!(f, "Runtime error:\n{}", e),
-            TestError::OutputMismatch(expected, actual) => write!(f, "Expected:\n{}\nActual:\n{}", expected.0, actual.0),
+            TestError::OutputMismatch(expected, actual) => {
+                write!(f, "Expected:\n{}\nActual:\n{}", expected.0, actual.0)
+            }
             TestError::ManualCheck(actual) => write!(f, "Actual:\n{}", actual.0),
         }
     }
@@ -85,9 +87,15 @@ pub fn execute_command(mut cmd: Command) -> Result<(), Box<dyn std::error::Error
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .spawn().expect("Cannot spawn process");
+        .spawn()
+        .expect("Cannot spawn process");
 
-    let Output { stdout, stderr, status, .. } = child.wait_with_output().unwrap();
+    let Output {
+        stdout,
+        stderr,
+        status,
+        ..
+    } = child.wait_with_output().unwrap();
 
     let stdout_str = String::from_utf8(stdout).unwrap_or(String::new());
     let stderr_str = String::from_utf8(stderr).unwrap_or(String::new());
@@ -108,7 +116,8 @@ pub fn run_test(exe: &Path, test_input: &Path) -> Result<String, String> {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .ok().unwrap();
+        .ok()
+        .unwrap();
 
     let mut file = std::fs::File::open(test_input).ok().unwrap();
     let stdin = child.stdin.as_mut().unwrap();

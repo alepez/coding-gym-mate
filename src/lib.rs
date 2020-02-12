@@ -1,5 +1,3 @@
-#![feature(matches_macro)]
-
 use std::convert::{TryFrom, TryInto};
 use std::path::Path;
 
@@ -96,6 +94,15 @@ mod test {
 
     use super::*;
 
+    macro_rules! matches {
+        ($expression:expr, $( $pattern:pat )|+ $( if $guard: expr )?) => {
+            match $expression {
+                $( $pattern )|+ $( if $guard )? => true,
+                _ => false
+            }
+        }
+    }
+
     #[test]
     fn test_language_from_str() {
         let lang: Option<Language> = "rs".try_into().ok();
@@ -132,7 +139,7 @@ mod test {
         let test_output = PathBuf::from("test_samples/output.txt");
 
         let err = launch(lan, &source, Some(&test_input), Some(&test_output));
-        assert_eq!(err,Ok(()));
+        assert_eq!(err, Ok(()));
     }
 
     #[test]

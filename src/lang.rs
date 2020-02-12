@@ -23,7 +23,6 @@ pub fn execute_compiler(cmd: Command, exe: &Path) -> Result<Executable, TestErro
         .map_err(|err| TestError::CompilerError(err.to_string()))
 }
 
-
 #[cfg(test)]
 mod test {
     use super::*;

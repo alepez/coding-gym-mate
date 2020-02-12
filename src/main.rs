@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use inotify::{EventMask, Inotify, WatchMask};
 use structopt::StructOpt;
 
-use coding_gym_mate::{Language, launch};
+use coding_gym_mate::{launch, Language};
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "coding-gym-mate")]
