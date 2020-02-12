@@ -137,8 +137,8 @@ mod test {
 
     #[test]
     fn test_launch_no_input() {
-        let lan = Some(Language::Rust);
-        let source = PathBuf::from("test_samples/nop.rs");
+        let lan = Some(Language::CPlusPlus);
+        let source = PathBuf::from("test_samples/nop.cpp");
         let test_input = PathBuf::from("test_samples/wrong_file.txt");
         let test_output = PathBuf::from("test_samples/output.txt");
 
@@ -166,5 +166,15 @@ mod test {
 
         let err = launch(lan, &source, Some(&test_input), Some(&test_output));
         assert!(matches!(err, Err(TestError::CompilerError(_))));
+    }
+
+    #[test]
+    fn test_launch_manual_check() {
+        let lan = Some(Language::Rust);
+        let source = PathBuf::from("test_samples/nop.rs");
+        let test_input = PathBuf::from("test_samples/input.txt");
+
+        let err = launch(lan, &source, Some(&test_input), None);
+        assert!(matches!(err, Err(TestError::ManualCheck(_))));
     }
 }
